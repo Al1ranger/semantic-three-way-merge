@@ -204,8 +204,8 @@ def test_direct_model_schema_error_leaves_job_open(contract, direct_vm, direct_a
 
 
 def test_direct_http_failures_have_bounded_liveness(contract, direct_vm, direct_alice):
-    key = prepare(contract, direct_vm, direct_alice)
     direct_vm.mock_web(r".*/base\.json", {"status": 503, "body": b"unavailable"})
+    key = prepare(contract, direct_vm, direct_alice)
     for attempt in range(3):
         contract.reconcile(key, attempt)
     assert contract.get_job(key)["state"] == "INCONCLUSIVE"
