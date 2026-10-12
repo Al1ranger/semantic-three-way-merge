@@ -1,0 +1,12 @@
+{
+  "name": "semantic-three-way-merge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "../contextual-mask-store/.venv/Scripts/python.exe -m pytest -q",
+    "check:sdk": "node scripts/sdk-check.mjs"
+  },
+  "dependencies": {
+    "genlayer-js": "1.1.8"
+  }
+}
