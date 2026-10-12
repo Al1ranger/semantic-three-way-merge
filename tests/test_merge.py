@@ -97,6 +97,30 @@ def test_equivalence_checks_all_decision_fields():
     assert not ns["equivalent"](None, report)
 
 
+def test_actual_validator_callback_refetches_and_checks_full_report():
+    from types import SimpleNamespace
+    klass = next(n for n in tree.body if isinstance(n, ast.ClassDef))
+    method = next(n for n in klass.body if isinstance(n, ast.FunctionDef) and n.name == "reconcile")
+    validator = next(n for n in method.body if isinstance(n, ast.FunctionDef) and n.name == "validate")
+    class Return:
+        def __init__(self, data):
+            self.calldata = data
+    calls = []
+    report = {"state": "MERGED", "sources": [{"hash": "real"}], "rows": [{"choice": 2}]}
+    def independent():
+        calls.append(True)
+        return report
+    local = {"gl": SimpleNamespace(vm=SimpleNamespace(Return=Return)),
+             "equivalent": ns["equivalent"], "observe": independent}
+    exec(compile(ast.Module(body=[validator], type_ignores=[]), "<actual-validator>", "exec"), local)
+    assert local["validate"](Return(report))
+    assert not local["validate"](Return(dict(report, sources=[{"hash": "forged"}])))
+    assert not local["validate"](Return(dict(report, rows=[{"choice": 1}])))
+    assert len(calls) == 3
+    assert not local["validate"](object())
+    assert len(calls) == 3
+
+
 @pytest.fixture
 def contract(direct_vm, direct_deploy, direct_alice):
     direct_vm.sender = direct_alice
