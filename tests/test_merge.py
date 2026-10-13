@@ -61,7 +61,7 @@ def test_exhaustive_presence_and_labels():
                 oldpair = {(0,1): 1, (0,2): 0, (1,2): 2}[tuple(task["slots"])]
                 newlabels.append(old[oldpair])
             assert merge(swapped, newlabels)["state"] == actual["state"]
-    assert count >= 100
+    assert count == 400
 
 
 @pytest.mark.parametrize("raw", [

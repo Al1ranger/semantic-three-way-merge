@@ -1,0 +1,32 @@
+{
+  "contract": "0x62883BfE483fB1565CBF3fe82C958fbBc848a022",
+  "network": "studionet",
+  "fixture_commit": "fff8bd3b422423cadb510cc79d8e3e1781d6cb9f",
+  "source": {
+    "match": true,
+    "normalization": "CRLF to LF; single trailing newline",
+    "sha256": "79e7f89682c79f27f4e2b867202f5cb587e3de176d6b5545b6df3b11bf1ac1c6"
+  },
+  "deployment": {
+    "hash": "0xd6e8fbfbd84aa45d4e65c0e7acf9e17cfde6c820dc784ab420a94350ae38cbc1",
+    "status": "FINALIZED",
+    "execution": "SUCCESS",
+    "consensus": "MAJORITY_AGREE",
+    "verified": true
+  },
+  "registration": {
+    "hash": "0x24a32e1ab520233602f40df59a633b7a081243b19364127f6991eb43c5860d2e",
+    "readback": "OPEN",
+    "final_receipt_verified": false,
+    "key": "f45768c5c178d21077800141933c09e3af02af1d6e9d22a9cb72dcc3ad63b2e6",
+    "spec_root": "4e6af1f6635d05f67f7f6b19c8e2aec2526fd0060036afb11cf6e2db853c7df5"
+  },
+  "semantic_lifecycle_verified": false,
+  "tests": {
+    "pytest": 41,
+    "exhaustive_combinations": 400,
+    "lint": "PASS",
+    "interface_methods": 7,
+    "sdk_calldata_roundtrips": 3
+  }
+}
