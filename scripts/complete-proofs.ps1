@@ -39,7 +39,15 @@ function Read-State([string]$Id, [string]$Expected) {
 function Send-Step([string]$Step, [string]$Method, [object[]]$Values, [string]$ExpectedError = "") {
     # Capture raw CLI receipt privately in memory; NEVER print or persist it.
     # The CLI may include validator configuration in an error object.
-    $raw = (& node --require $Pin --require $Read --require $Send $Cli write $Address $Method --args @Values 2>&1 | Out-String)
+    # Windows PowerShell 5.1 wraps native stderr as ErrorRecord objects.
+    # Capture it without aborting before the hash/receipt checks.
+    $previousErrorPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $raw = (& node --require $Pin --require $Read --require $Send $Cli write $Address $Method --args @Values 2>&1 | Out-String)
+    } finally {
+        $ErrorActionPreference = $previousErrorPreference
+    }
     $found = [regex]::Matches($raw, "tx_id:\s*'?(0x[0-9a-fA-F]{64})") |
         ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique
     if (-not $found) {

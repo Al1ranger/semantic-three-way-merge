@@ -1,12 +1,18 @@
 // Public StudioNet RPC transport only. No wallet files or signing operations.
 const {spawn} = require('node:child_process');
-const script = `$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); `
-  + `$encoded=[Console]::In.ReadToEnd(); $body=[System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($encoded)); `
-  + `$r=Invoke-WebRequest -UseBasicParsing -Uri 'https://studio.genlayer.com/api' -Method Post `
-  + `-ContentType 'application/json' -Body $body -TimeoutSec 25 -MaximumRetryCount 0; [Console]::Write($r.Content)`;
-const encodedScript = Buffer.from(script, 'utf16le').toString('base64');
-exports.requestOnce = rpc => new Promise((resolve, reject) => {
-  const child = spawn('pwsh.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encodedScript],
+const path = require('node:path');
+const {resolveStudioAddress} = require('./studio_dns.cjs');
+const shell = path.join(process.env.SystemRoot || 'C:\\Windows',
+  'System32', 'curl.exe');
+exports.requestOnce = async rpc => {
+  // Resolve BEFORE any RPC send. No uncertain broadcast is retried.
+  const address = await resolveStudioAddress();
+  return new Promise((resolve, reject) => {
+  const child = spawn(shell, ['--disable', '--silent', '--show-error', '--fail',
+    '--connect-timeout', '10', '--max-time', '25', '--proto', '=https',
+    '--resolve', 'studio.genlayer.com:443:' + address,
+    '--request', 'POST', '--header', 'Content-Type: application/json', '--data-binary', '@-',
+    'https://studio.genlayer.com/api'],
     {windowsHide: true, stdio: ['pipe', 'pipe', 'pipe']});
   const chunks = [];
   let size = 0, settled = false;
@@ -22,13 +28,17 @@ exports.requestOnce = rpc => new Promise((resolve, reject) => {
     if (size > 10485760) { child.kill(); finish(Error('Native RPC response too large')); }
     else chunks.push(chunk);
   });
-  child.stderr.resume(); // Never expose raw request/error context in logs.
+  child.stderr.resume(); // Never expose raw stderr, payloads or server configuration.
   child.on('error', () => finish(Error('Native transport process failed')));
   child.on('close', code => {
-    if (code !== 0) return finish(Error('Native HTTP failed; check receipt before any rebroadcast'));
+    if (code !== 0) {
+      const category = ({5:'PROXY_DNS',6:'DNS',7:'CONNECT',22:'HTTP_STATUS',28:'TIMEOUT',35:'TLS_HANDSHAKE',60:'TLS_CERTIFICATE'})[code] ?? 'PROCESS';
+      return finish(Error('Native HTTP failed (' + category + '); check receipt before any rebroadcast'));
+    }
     const body = Buffer.concat(chunks).toString('utf8');
     try { JSON.parse(body); finish(null, body); } catch { finish(Error('Invalid native RPC response')); }
   });
   child.stdin.on('error', () => finish(Error('Native transport input failed')));
-  child.stdin.end(Buffer.from(JSON.stringify(rpc), 'utf8').toString('base64'));
+  child.stdin.end(JSON.stringify(rpc));
 });
+};
